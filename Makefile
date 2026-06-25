@@ -52,3 +52,7 @@ mutants:
 ## Remove build artifacts
 clean:
 	cargo clean
+
+## Run Playwright E2E tests (requires Node.js + npm install in frontend/)
+test-e2e-ui:
+	cd frontend && npm install --prefer-offline && npx playwright install chromium --with-deps && npm run test:e2e
