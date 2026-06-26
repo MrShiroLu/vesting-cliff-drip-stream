@@ -56,3 +56,11 @@ clean:
 ## Run Playwright E2E tests (requires Node.js + npm install in frontend/)
 test-e2e-ui:
 	cd frontend && npm install --prefer-offline && npx playwright install chromium --with-deps && npm run test:e2e
+
+## Run E2E tests against local Stellar quickstart (issue #97)
+## Starts docker-compose, builds WASM, runs test suite, then tears down.
+test-e2e: build
+	docker compose -f docker-compose.e2e.yml up -d
+	node tests/e2e/run_e2e.js; status=$$?; \
+	docker compose -f docker-compose.e2e.yml down; \
+	exit $$status
