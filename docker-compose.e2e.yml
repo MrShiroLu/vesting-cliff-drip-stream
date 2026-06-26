@@ -1,0 +1,16 @@
+services:
+  stellar:
+    image: stellar/quickstart:latest
+    ports:
+      - "8000:8000"   # Horizon HTTP API
+      - "11625:11625" # Stellar Core peer
+      - "11626:11626" # Stellar Core HTTP
+    environment:
+      NETWORK: local
+      ENABLE_SOROBAN_RPC: "true"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
