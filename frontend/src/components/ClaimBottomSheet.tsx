@@ -17,10 +17,11 @@ export function ClaimBottomSheet({ claimableAmount, tokenSymbol, onClaim, onClos
 
   // Swipe-down to dismiss
   function handleTouchStart(e: React.TouchEvent) {
-    startY.current = e.touches[0].clientY;
+    startY.current = e.touches[0]?.clientY ?? null;
   }
   function handleTouchEnd(e: React.TouchEvent) {
-    if (startY.current !== null && e.changedTouches[0].clientY - startY.current > 60) {
+    const endY = e.changedTouches[0]?.clientY;
+    if (startY.current !== null && endY !== undefined && endY - startY.current > 60) {
       onClose();
     }
     startY.current = null;
