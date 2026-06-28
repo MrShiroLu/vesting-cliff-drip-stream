@@ -26,6 +26,13 @@ function StreamList() {
   const { t } = useTranslation();
   const { setPending, setConfirmed, setFailed } = useTx();
   const [claimTarget, setClaimTarget] = useState<VestingStream | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Simulate async data fetch; replace with real contract reads
+  useState(() => {
+    const t = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(t);
+  });
 
   async function handleClaim() {
     if (claimTarget) analytics.claimSubmitted(claimTarget.token, claimTarget.claimableAmount);
@@ -38,6 +45,8 @@ function StreamList() {
       setFailed(err instanceof Error ? err.message : "Unknown error — please retry.");
     }
   }
+
+  if (loading) return <StreamListSkeleton count={4} />;
 
   if (MOCK_STREAMS.length === 0) {
     return (
@@ -57,7 +66,10 @@ function StreamList() {
           <li key={s.id} className="stream-card" style={{ flexDirection: "column", gap: "0.75rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
               <div>
-                <div style={{ fontFamily: "monospace", fontSize: "0.85rem" }}>{s.recipient}</div>
+                <div style={{ fontFamily: "monospace", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                  {s.recipient}
+                  <CopyButton text={s.recipient} label="Copy recipient address" />
+                </div>
                 <div style={{ marginTop: "0.25rem" }}>
                   <StatusBadge status={s.status} />
                 </div>
