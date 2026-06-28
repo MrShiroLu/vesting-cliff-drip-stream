@@ -5,21 +5,28 @@ import {
   getAddress,
   requestAccess,
 } from "@stellar/freighter-api";
+import { useWalletBalances } from "@/hooks/useWalletBalances";
+import { WalletBalance } from "@/types";
 
 interface WalletCtx {
   address: string | null;
+  balances: WalletBalance[];
+  balancesLoading: boolean;
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletCtx>({
   address: null,
+  balances: [],
+  balancesLoading: false,
   connect: async () => {},
   disconnect: async () => {},
 });
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [address, setAddress] = useState<string | null>(null);
+  const { balances, loading: balancesLoading } = useWalletBalances(address);
 
   const connect = useCallback(async () => {
     const connected = await isConnected();
@@ -36,7 +43,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <WalletContext.Provider value={{ address, connect, disconnect }}>
+    <WalletContext.Provider value={{ address, balances, balancesLoading, connect, disconnect }}>
       {children}
     </WalletContext.Provider>
   );
