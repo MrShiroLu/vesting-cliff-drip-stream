@@ -3,6 +3,8 @@
 A production-ready Soroban smart contract that combines a **time-locked cliff** with **linear token streaming** for long-term contributor retention on the Stellar network.
 
 > Coming from standard Drips? See the [comparison guide](docs/comparison.md) for a feature table, cancel behaviour details, and migration instructions.
+>
+> Have a question? Check the [FAQ](docs/faq.md) for common answers about stream lifecycle, claiming, token support, and fees.
 
 ---
 
@@ -57,6 +59,10 @@ Tokens:        │   [locked]      │  ← instant catch-up claim → │ ← l
         └── test_edge_cases.rs     # Boundary & integration scenarios
 ```
 
+
+## Architecture Decision Records
+
+Key design decisions (storage layout, rate type, cliff math, error codes, TTL strategy) are documented in [`docs/adr/`](docs/adr/README.md).
 
 ## Security
 
