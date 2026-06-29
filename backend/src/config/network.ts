@@ -28,7 +28,7 @@ const NETWORK_DEFAULTS: Record<NetworkName, Pick<NetworkConfig, "rpcUrl" | "netw
   },
 };
 
-export function loadNetworkConfig(): NetworkConfig {
+function loadNetworkConfig(): NetworkConfig {
   const raw = (process.env.STELLAR_NETWORK ?? "testnet").toLowerCase();
 
   if (!Object.keys(NETWORK_DEFAULTS).includes(raw)) {
@@ -41,6 +41,7 @@ export function loadNetworkConfig(): NetworkConfig {
   const network = raw as NetworkName;
   const defaults = NETWORK_DEFAULTS[network];
 
+  // Per-network env overrides: TESTNET_RPC_URL, MAINNET_RPC_URL, etc.
   const prefix = network.toUpperCase();
   const rpcUrl = process.env[`${prefix}_RPC_URL`] ?? defaults.rpcUrl;
   const networkPassphrase =
@@ -55,6 +56,9 @@ export function loadNetworkConfig(): NetworkConfig {
 
   return { network, rpcUrl, contractId, networkPassphrase };
 }
+
+// Exported for direct testing without module re-import
+export { loadNetworkConfig };
 
 // Exported singleton — throws on bad config at module load time (startup validation)
 export const networkConfig: NetworkConfig = loadNetworkConfig();
