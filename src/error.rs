@@ -68,10 +68,4 @@ pub enum VestingError {
     /// and would produce confusing behaviour in `cancel_stream` (the same
     /// address would be both the refund target and the earned-tokens target).
     InvalidRecipient = 10,
-
-    /// **Code 11** — The caller is not authorised to perform this admin action.
-    ///
-    /// Returned by privileged functions (e.g., `migrate_schedule`) when the
-    /// caller has not been granted the required admin role.
-    Unauthorized = 11,
 }
