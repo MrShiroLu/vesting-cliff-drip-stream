@@ -86,11 +86,9 @@ impl VestingDrips {
         let total_deposit: i128 = calculate_total_deposit(rate, total_duration)?;
 
         let token_client = token::Client::new(&env, &token);
-        token_client.transfer(
-            &sponsor,
-            &env.current_contract_address(),
-            &total_deposit,
-        );
+        token_client
+            .try_transfer(&sponsor, &env.current_contract_address(), &total_deposit)
+            .map_err(|_| VestingError::TransferFailed)?;
 
         // ── Persist schedule ──────────────────────────────────────────────────
         let schedule = VestingSchedule {
@@ -101,6 +99,7 @@ impl VestingDrips {
             cliff_ledger,
             end_ledger,
             last_claimed_ledger: start_ledger,
+            total_claimed: 0,
         };
         storage::set_schedule(&env, &recipient, &schedule);
 
@@ -208,22 +207,21 @@ impl VestingDrips {
                 (0_i128, total_remaining)
             };
 
-        storage::remove_schedule(&env, &recipient);
-
+        // Perform transfers before mutating storage so that a transfer failure
+        // leaves the schedule intact (atomicity: schedule is only removed if
+        // both transfers succeed).
         if recipient_share > 0 {
-            token_client.transfer(
-                &env.current_contract_address(),
-                &recipient,
-                &recipient_share,
-            );
+            token_client
+                .try_transfer(&env.current_contract_address(), &recipient, &recipient_share)
+                .map_err(|_| VestingError::TransferFailed)?;
         }
         if sponsor_refund > 0 {
-            token_client.transfer(
-                &env.current_contract_address(),
-                &sponsor,
-                &sponsor_refund,
-            );
+            token_client
+                .try_transfer(&env.current_contract_address(), &sponsor, &sponsor_refund)
+                .map_err(|_| VestingError::TransferFailed)?;
         }
+
+        storage::remove_schedule(&env, &recipient);
 
         events::emit_stream_cancelled(&env, &recipient, sponsor_refund);
 
@@ -263,8 +261,16 @@ impl VestingDrips {
             return Err(VestingError::NothingToClaim);
         }
 
-        // Update or remove the schedule.
+        // Transfer tokens to recipient before mutating storage so that a
+        // transfer failure leaves the schedule intact.
+        let token_client = token::Client::new(&env, &schedule.token);
+        token_client
+            .try_transfer(&env.current_contract_address(), &recipient, &claimable_amount)
+            .map_err(|_| VestingError::TransferFailed)?;
+
+        // Update or remove the schedule only after the transfer succeeds.
         schedule.last_claimed_ledger = active_end;
+        schedule.total_claimed += claimable_amount;
         let stream_finished = active_end == schedule.end_ledger;
 
         if stream_finished {
@@ -273,14 +279,6 @@ impl VestingDrips {
         } else {
             storage::set_schedule(&env, &recipient, &schedule);
         }
-
-        // Transfer tokens to recipient.
-        let token_client = token::Client::new(&env, &schedule.token);
-        token_client.transfer(
-            &env.current_contract_address(),
-            &recipient,
-            &claimable_amount,
-        );
 
         events::emit_tokens_claimed(&env, &recipient, claimable_amount, active_end);
 
@@ -379,12 +377,16 @@ impl VestingDrips {
         let amount = (schedule.end_ledger - schedule.last_claimed_ledger) as i128
             * schedule.rate_per_ledger;
 
-        storage::remove_schedule(&env, &recipient);
-
+        // Transfer before mutating storage so that a transfer failure leaves
+        // the schedule intact.
         if amount > 0 {
             let token_client = token::Client::new(&env, &schedule.token);
-            token_client.transfer(&env.current_contract_address(), &sponsor, &amount);
+            token_client
+                .try_transfer(&env.current_contract_address(), &sponsor, &amount)
+                .map_err(|_| VestingError::TransferFailed)?;
         }
+
+        storage::remove_schedule(&env, &recipient);
 
         events::emit_emergency_drain(&env, &recipient, &sponsor, amount);
 
@@ -406,9 +408,8 @@ impl VestingDrips {
             (schedule.end_ledger - schedule.start_ledger) as i128;
         let total_deposited = schedule.rate_per_ledger * total_duration;
 
-        let claimed_ledgers =
-            (schedule.last_claimed_ledger - schedule.start_ledger) as i128;
-        let total_claimed = schedule.rate_per_ledger * claimed_ledgers;
+        // Read the authoritative on-chain counter directly.
+        let total_claimed = schedule.total_claimed;
 
         let remaining = total_deposited - total_claimed;
 
