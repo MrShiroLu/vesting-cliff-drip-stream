@@ -1,3 +1,9 @@
+// `#[contracterror]` emits an inherent `impl VestingError { spec_xdr() }` with
+// no doc comment of its own; rustc doesn't propagate item-level `#[allow]`
+// onto attribute-macro-generated sibling impls, so the allow has to be
+// module-scoped here.
+#![allow(missing_docs)]
+
 use soroban_sdk::contracterror;
 
 /// All error codes returned by the VestingDrips contract.

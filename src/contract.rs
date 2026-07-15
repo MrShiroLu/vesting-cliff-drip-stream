@@ -1,3 +1,9 @@
+// `#[contracttype]`/`#[contract]` emit inherent `impl` blocks (`spec_xdr()`,
+// `spec_xdr_<method>()`) with no doc comments of their own; rustc doesn't
+// propagate item-level `#[allow]` onto attribute-macro-generated sibling
+// impls, so the allow has to be module-scoped.
+#![allow(missing_docs)]
+
 use soroban_sdk::{contract, contractimpl, contracttype, token, Address, BytesN, Env};
 
 use crate::{
@@ -26,6 +32,7 @@ pub struct StreamStats {
     pub claimable_now: i128,
 }
 
+/// The vesting-drip contract entry point.
 #[contract]
 pub struct VestingDrips;
 
