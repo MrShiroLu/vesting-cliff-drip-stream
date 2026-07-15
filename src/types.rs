@@ -53,6 +53,8 @@ pub struct VestingSchedule {
 pub enum DataKey {
     /// Per-recipient vesting schedule.
     Schedule(Address),
+    /// The address with authority to upgrade the contract and transfer admin.
+    Admin,
 }
 
 /// Human-readable status of a vesting stream.

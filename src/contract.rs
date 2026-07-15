@@ -1,4 +1,4 @@
-use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Env};
+use soroban_sdk::{contract, contractimpl, contracttype, token, Address, BytesN, Env};
 
 use crate::{
     error::VestingError,
@@ -32,6 +32,54 @@ pub struct VestingDrips;
 #[contractimpl]
 impl VestingDrips {
     // ── Admin / Sponsor ───────────────────────────────────────────────────────
+
+    /// Sets `admin` as the contract's admin. Must be called once, before any
+    /// upgrade or admin-transfer call.
+    ///
+    /// # Errors
+    /// * `AlreadyInitialized` – An admin has already been set.
+    pub fn initialize(env: Env, admin: Address) -> Result<(), VestingError> {
+        if storage::get_admin(&env).is_some() {
+            return Err(VestingError::AlreadyInitialized);
+        }
+        admin.require_auth();
+        storage::set_admin(&env, &admin);
+        Ok(())
+    }
+
+    /// Upgrades the contract to the WASM referenced by `new_wasm_hash`.
+    ///
+    /// # Errors
+    /// * `Unauthorized` – `admin` is not the address set during `initialize`.
+    pub fn upgrade(
+        env: Env,
+        admin: Address,
+        new_wasm_hash: BytesN<32>,
+    ) -> Result<(), VestingError> {
+        admin.require_auth();
+        if storage::get_admin(&env) != Some(admin) {
+            return Err(VestingError::Unauthorized);
+        }
+        env.deployer().update_current_contract_wasm(new_wasm_hash);
+        Ok(())
+    }
+
+    /// Transfers admin authority from the current admin to `new_admin`.
+    ///
+    /// # Errors
+    /// * `Unauthorized` – `admin` is not the address set during `initialize`.
+    pub fn transfer_admin(
+        env: Env,
+        admin: Address,
+        new_admin: Address,
+    ) -> Result<(), VestingError> {
+        admin.require_auth();
+        if storage::get_admin(&env) != Some(admin) {
+            return Err(VestingError::Unauthorized);
+        }
+        storage::set_admin(&env, &new_admin);
+        Ok(())
+    }
 
     /// Creates a new cliff-vesting stream for `recipient`.
     ///

@@ -56,3 +56,16 @@ pub fn remove_schedule(env: &Env, recipient: &Address) {
         .persistent()
         .remove(&DataKey::Schedule(recipient.clone()));
 }
+
+// ── Admin ────────────────────────────────────────────────────────────────────
+
+/// Returns the contract's admin address, or `None` if `initialize` has not
+/// been called yet.
+pub fn get_admin(env: &Env) -> Option<Address> {
+    env.storage().instance().get(&DataKey::Admin)
+}
+
+/// Persists `admin` in instance storage.
+pub fn set_admin(env: &Env, admin: &Address) {
+    env.storage().instance().set(&DataKey::Admin, admin);
+}
