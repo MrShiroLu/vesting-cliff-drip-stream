@@ -340,14 +340,14 @@ impl VestingDrips {
         env: Env,
         recipient: Address,
     ) -> Option<VestingSchedule> {
-        storage::get_schedule(&env, &recipient)
+        storage::get_schedule_readonly(&env, &recipient)
     }
 
     /// Returns the number of tokens currently claimable by `recipient`.
     ///
     /// Returns `0` if the cliff has not been reached or no schedule exists.
     pub fn claimable_amount(env: Env, recipient: Address) -> i128 {
-        let Some(schedule) = storage::get_schedule(&env, &recipient) else {
+        let Some(schedule) = storage::get_schedule_readonly(&env, &recipient) else {
             return 0;
         };
         let current_ledger = env.ledger().sequence();
@@ -361,7 +361,7 @@ impl VestingDrips {
 
     /// Returns `true` if the cliff has been passed for `recipient`.
     pub fn is_cliff_passed(env: Env, recipient: Address) -> bool {
-        let Some(schedule) = storage::get_schedule(&env, &recipient) else {
+        let Some(schedule) = storage::get_schedule_readonly(&env, &recipient) else {
             return false;
         };
         env.ledger().sequence() >= schedule.cliff_ledger
@@ -373,7 +373,7 @@ impl VestingDrips {
     /// or has already been cancelled/completed and removed from storage).
     /// Use the returned variant to drive badge colour in UI components.
     pub fn get_status(env: Env, recipient: Address) -> Option<StreamStatus> {
-        let schedule = storage::get_schedule(&env, &recipient)?;
+        let schedule = storage::get_schedule_readonly(&env, &recipient)?;
         let current = env.ledger().sequence();
         let status = if current < schedule.cliff_ledger {
             StreamStatus::PreCliff
@@ -450,7 +450,7 @@ impl VestingDrips {
     ///
     /// Returns `None` when no schedule exists.
     pub fn get_stats(env: Env, recipient: Address) -> Option<StreamStats> {
-        let schedule = storage::get_schedule(&env, &recipient)?;
+        let schedule = storage::get_schedule_readonly(&env, &recipient)?;
 
         let total_duration =
             (schedule.end_ledger - schedule.start_ledger) as i128;
